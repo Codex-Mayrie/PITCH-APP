@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  {% if title %}
+  <title>Pitch Project - {{ title }}</title>
+  {% else %}
+  <title>Pitch Project</title>
+  {% endif %}
+</head>
+<body>
+  {% for pitch in pitches %}
+  <h1>{{ pitch.title}}</h1>
+  <p>By {{ pitch.author}} on {{pitch.date_posted}}</p>
+  {% endfor %}
+</body>
+</html>
