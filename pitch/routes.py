@@ -1,22 +1,20 @@
 from flask import render_template, url_for, flash, redirect, request
 from pitch import app, db, bcrypt
 from pitch.forms import RegistrationForm, LoginForm
-from pitch.models import User, Post
+from pitch.models import User, Pitch
 from flask_login import login_user, current_user, logout_user, login_required
 
 
-posts = [
+pitches = [
     {
-        'author': 'Corey Schafer',
-        'title': 'Blog Post 1',
-        'content': 'First post content',
-        'date_posted': 'April 20, 2018'
+        'author': 'Alicia Jeanns',
+        'title': 'Pitch 1',
+        'date_posted': 'November 27, 2019'
     },
     {
-        'author': 'Jane Doe',
-        'title': 'Blog Post 2',
-        'content': 'Second post content',
-        'date_posted': 'April 21, 2018'
+        'author': 'Mary Mburu',
+        'title': 'Pitch 2',
+        'date_posted': 'November 28, 2019'
     }
 ]
 
@@ -24,7 +22,7 @@ posts = [
 @app.route("/")
 @app.route("/home")
 def home():
-    return render_template('home.html', posts=posts)
+    return render_template('home.html', pitches=pitches)
 
 
 @app.route("/about")
