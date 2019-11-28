@@ -1,28 +1,17 @@
+import os
+import secrets
 from flask import render_template, url_for, flash, redirect, request
 from pitch import app, db, bcrypt
-from pitch.forms import RegistrationForm, LoginForm
+from pitch.forms import RegistrationForm, LoginForm, UpdateAccountForm, PitchForm
 from pitch.models import User, Pitch
 from flask_login import login_user, current_user, logout_user, login_required
-
-
-pitches = [
-    {
-        'author': 'Alicia Jeanns',
-        'title': 'Pitch 1',
-        'date_posted': 'November 27, 2019'
-    },
-    {
-        'author': 'Mary Mburu',
-        'title': 'Pitch 2',
-        'date_posted': 'November 28, 2019'
-    }
-]
 
 
 @app.route("/")
 @app.route("/home")
 def home():
-    return render_template('home.html', pitches=pitches)
+  pitches = Pitch.query.all()
+  return render_template('home.html', pitches=pitches)
 
 
 @app.route("/about")
@@ -67,7 +56,82 @@ def logout():
     return redirect(url_for('home'))
 
 
-@app.route("/account")
+def save_picture(form_picture):
+  random_hex = secrets.token_hex(8)
+  _, f_ext = os.path.splitext(form_picture.filename)
+  picture_fn = random_hex + f_ext
+  picture_path = os.path.join(app.root_path, 'static/profile_pics', picture_fn)
+  form_picture.save(picture_path)
+  
+  return 
+
+
+@app.route("/account", methods=['GET', 'POST'])
 @login_required
 def account():
-    return render_template('account.html', title='Account')
+    form = UpdateAccountForm()
+    if form.validate_on_submit():
+        if form.picture.data:
+            picture_file = save_picture(form.picture.data)
+            current_user.image_file = picture_file
+        current_user.username = form.username.data
+        current_user.email = form.email.data
+        db.session.commit()
+        flash('Your account has been updated!', 'success')
+        return redirect(url_for('account'))
+    elif request.method == 'GET':
+        form.username.data = current_user.username
+        form.email.data = current_user.email
+    image_file = url_for('static', filename='profile_pics/' + current_user.image_file)
+    return render_template('account.html', title='Account',
+                           image_file=image_file, form=form)
+    
+@app.route("/pitch/new", methods=['GET', 'POST'])
+@login_required
+def new_pitch():
+    form = PitchForm()
+    if form.validate_on_submit():
+        pitch = Pitch(title=form.title.data, content=form.content.data, author=current_user)
+        db.session.add(pitch)
+        db.session.commit()
+        flash('Your post has been created!', 'success')
+        return redirect(url_for('home'))
+    return render_template('generate_pitch.html', title='New Pitch',
+                           form=form, legend='New Pitch')
+
+
+@app.route("/pitch/<int:pitch_id>")
+def pitch(pitch_id):
+    pitch = Pitch.query.get_or_404(pitch_id)
+    return render_template('pitch.html', title=pitch.title, pitch=pitch)
+
+
+@app.route("/pitch/<int:pitch_id>/update", methods=['GET', 'POST'])
+@login_required
+def update_pitch(pitch_id):
+    pitch = Pitch.query.get_or_404(pitch_id)
+    if pitch.author != current_user:
+        abort(403)
+    form = PitchForm()
+    if form.validate_on_submit():
+        pitch.title = form.title.data
+        db.session.commit()
+        flash('Your pitch has been updated!', 'success')
+        return redirect(url_for('pitch', pitch_id=pitch.id))
+    elif request.method == 'GET':
+        form.title.data = pitch.title
+        
+    return render_template('generate_pitch.html', title='Update Pitch',
+                           form=form, legend='Update Pitch')
+
+
+@app.route("/pitch/<int:pitch_id>/delete", methods=['POST'])
+@login_required
+def delete_pitch(pitch_id):
+    pitch = Pitch.query.get_or_404(pitch_id)
+    if pitch.author != current_user:
+        abort(403)
+    db.session.delete(pitch)
+    db.session.commit()
+    flash('Your pitch has been deleted!', 'success')
+    return redirect(url_for('home'))
