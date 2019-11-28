@@ -94,7 +94,7 @@ def new_pitch():
         pitch = Pitch(title=form.title.data, content=form.content.data, author=current_user)
         db.session.add(pitch)
         db.session.commit()
-        flash('Your post has been created!', 'success')
+        flash('Your pitch has been created!', 'success')
         return redirect(url_for('home'))
     return render_template('generate_pitch.html', title='New Pitch',
                            form=form, legend='New Pitch')
@@ -135,3 +135,5 @@ def delete_pitch(pitch_id):
     db.session.commit()
     flash('Your pitch has been deleted!', 'success')
     return redirect(url_for('home'))
+
+
